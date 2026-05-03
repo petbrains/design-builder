@@ -4,7 +4,7 @@
   "version": "2.3.1",
   "description": "Build distinctive production-grade interfaces on web + iOS through 6 user-facing commands (/setup, /design_page, /design_screen, /build, /improve, /review). Spec-first workflow: design specs (markdown) precede code generation. Knowledge-base skills: `design` (anti-patterns, HIG, BM25 search), `motion` (web animation libraries — GSAP/WAAPI/CSS/Anime/Lottie/Three — and short-video via HyperFrames), and `playwright-cli` (browser automation for visual audits and live web reference capture). designlib MCP supplies authoritative palettes/fonts/inspiration_pages. Evolved from superdesign 1.2.",
   "author": {
-    "name": "Petbrains"
+    "name": "Pet Brains"
   },
   "homepage": "https://github.com/petbrains/design-builder",
   "repository": "https://github.com/petbrains/design-builder",
