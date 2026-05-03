@@ -65,7 +65,7 @@ For each entry in `## Animations` that references a catalog `animation.id`:
    - Already in `dependencies` or `devDependencies` → continue.
    - Missing → record into the run's `Risks taken & gaps`. **Do NOT auto-install** (lockfile / CI / monorepo concerns are user's call).
 
-For hand-rolled animations (lines marked `(hand-rolled, transform-only)` in the spec) → no vendoring; you'll write them inline in the page code in Phase 3.3.
+For hand-rolled animations (lines marked `(hand-rolled, transform-only)` in the spec) → no vendoring; you'll write them inline in the page code in Phase 3.3. **Read `skills/motion/references/selection.md` to pick the right library, then the matching `skills/motion/references/web-animations/<library>.md` for the patterns.** Every hand-rolled animation must include a `prefers-reduced-motion` fallback; every emit must respect the P0/P1 entries in `skills/motion/references/anti-patterns.md`.
 
 For HIG spring animations (iOS specs only) → no vendoring; you'll write inline in the SwiftUI view in Phase 3.3.
 

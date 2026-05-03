@@ -6,7 +6,14 @@ A design plugin for Claude Code that turns AI-generated UI from "obviously AI" i
 
 → [Quickstart](#quickstart) · [The 6 commands](#the-6-commands) · [How it works](#three-layer-architecture)
 
----
+| Command | What it does | When to use |
+|---|---|---|
+| `/design-builder:setup` (alias `start`) | Interview → reference discovery → 2-3 direction candidates → HTML preview → emit `design-system.md`, `style-guide.md`, `content-library.md`, `tokens.css`, `preview.html`. | New project. You don't have a design foundation yet. |
+| `/design-builder:design_page <name>` | Reads the foundation → pulls inspiration_pages → user picks → writes a design spec to `design/pages/<name>.md` (no code). | You want to plan a web page before shipping code. |
+| `/design-builder:design_screen <name>` | Same, for app screens. Uses landing_patterns + iOS HIG. Spec adds Navigation context, Gestures, Safe areas. Writes to `design/screens/<name>.md`. | You want to plan an iOS / native screen before shipping code. |
+| `/design-builder:build [target]` | Reads spec(s) from `design/pages/` and/or `design/screens/` → writes code to your source tree. Supports single (`build landing`), batch (`build all`), glob, or interactive multi-select. | After one or more specs exist and you want production code. |
+| `/design-builder:improve [target]` | Light audit of code / Figma / screenshots → list of concrete fixes → apply mechanical ones (`Edit`). `--restructure` mode rebuilds weak sections from a fresh `inspiration_pages` anchor and can capture the live reference page via `playwright-cli`. | Existing design. Something feels off. You want quick wins. |
+| `/design-builder:review [target]` | Strict critique by `design-auditor` agent: composition, typography, color/WCAG, motion, AI-slop, anti-patterns, accessibility. P0-P3 report → `design/reviews/`. Accepts file path / Figma URL / **HTTP(S) URL** — URLs are auto-captured at desktop + mobile via `playwright-cli`. | Before shipping, or when `/improve` finished and you want full validation. |
 
 ## The problem we keep hitting
 
@@ -88,9 +95,9 @@ design/
   pages/               # design specs for web pages (markdown), one per page
   screens/             # design specs for app screens (markdown), one per screen
   references/          # your reference URLs + downloaded screenshots
-  screenshots/         # YOU drop screenshots here for /review (later: playwright auto)
+  screenshots/         # drop screenshots here for /review — OR pass a URL and playwright-cli auto-captures here at 1440x900 + 375x812
   reviews/             # P0-P3 audit reports (review-YYYY-MM-DD-HHMM.md)
-  .cache/              # debug context for cross-command state (gitignored)
+  .cache/              # debug context for cross-command state (gitignored — interview.json, stack.json, inspiration/<page_id>.png, ...)
 ```
 
 **Recommended `.gitignore`:**
@@ -134,7 +141,25 @@ Detail: [`skills/design/references/architecture.md`](skills/design/references/ar
 
 The audit covers: composition, hierarchy, focal point, rhythm, grid, typography, color, WCAG, motion, **AI-slop detector** (Distinctiveness Gate's 7 questions applied to as-built surfaces), anti-patterns, accessibility. iOS adds Dynamic Type AX5, Reduce Motion, Increase Contrast/Transparency, accessibility labels, HIG checks.
 
-If no visual is available, the auditor runs in **code-only mode** and explicitly flags that composition / focal point / rhythm / mood-fit were not evaluated.
+If no visual is available, the auditor runs in **code-only mode** and explicitly flags that composition / focal point / rhythm / mood-fit were not evaluated. To skip the manual screenshot step, pass an HTTP(S) URL to `/review` and the auditor auto-captures via `playwright-cli` (see below).
+
+## Motion — animation knowledge & short-video
+
+The `motion` knowledge skill (`skills/motion/SKILL.md`) is the sister of `design`. It owns *how* animation gets implemented — the `design` skill picks the candidate, `motion` writes correct code. Two modes:
+
+- **Web-UI mode.** Per-library production knowledge: GSAP, WAAPI, CSS, Anime.js, Lottie, Three.js. Includes a selection decision matrix (`references/selection.md`), `prefers-reduced-motion` patterns for each library, bundle-cost guidance, and the P0–P3 anti-patterns checklist consumed by the auditor's Motion dimension and `/improve` Phase 2 step 5. `/build` routes hand-rolled animations through this skill so every emit respects accessibility and performance rules.
+- **Video mode.** Short-video generation via the HyperFrames pipeline (HTML compositions seeked frame-by-frame, FFmpeg encode). Composition contract + CLI commands (`init / lint / inspect / preview / render / transcribe / tts`) + Tailwind v4 browser runtime notes. Activated when the user asks for an MP4 / WebM deliverable rather than UI motion.
+
+Anti-pattern catalog: [`skills/motion/references/anti-patterns.md`](skills/motion/references/anti-patterns.md). Library reference index: [`skills/motion/SKILL.md`](skills/motion/SKILL.md).
+
+## Live web capture — `playwright-cli`
+
+The `playwright-cli` knowledge skill (`skills/playwright-cli/SKILL.md`, vendored from `@playwright/cli`, Apache-2.0) gives the plugin browser-automation muscle without a manual screenshot loop. Two integration sites today:
+
+- **`/review` with a URL.** `/design-builder:review http://localhost:3000` (or `https://example.com,https://example.com/pricing`) captures each URL at desktop (1440×900) + mobile (375×812), drops PNGs into `design/screenshots/<slug>.<viewport>.png`, then runs visual mode. Replaces the v2.0 "drop screenshots manually" stub for web targets.
+- **`/improve --restructure` with a fresh `inspiration_pages` anchor.** When the chosen anchor has a `url`, the live page is captured to `design/.cache/inspiration/<page_id>.png` (gitignored, reused on subsequent runs) so the rebuild plan can reference real composition rather than only metadata.
+
+Runtime is `npx @playwright/cli` — no global install, no `npm install` step. The first call downloads on demand. If unavailable (offline, no Node), capture steps fall back gracefully and the auditor surfaces a Caveats line. Mobile / iOS captures are still manual (Playwright doesn't help there).
 
 ---
 
@@ -157,6 +182,9 @@ Routing detail: [`skills/design/references/figma/README.md`](skills/design/refer
 - `skills/design/data/` — CSV databases (UX guidelines, tech stacks, anti-patterns)
 - `skills/design/scripts/` — BM25 search (Python), design system generator (Python), anti-pattern detector (Node.js)
 - `skills/design/templates/` — starters (iOS SwiftUI theme, web CSS/Tailwind/shadcn)
+- `skills/motion/` — sister knowledge skill: web-animation libraries (GSAP/WAAPI/CSS/Anime/Lottie/Three) + HyperFrames short-video pipeline
+- `skills/playwright-cli/` — sister knowledge skill: browser automation for `/review` URL captures and `/improve --restructure` live inspiration_pages
+- `skills/figma-use/` — Figma Plugin API wrapper (mandatory prerequisite for any `use_figma` write)
 - `agents/design-auditor.md` — sole sub-agent (used by `/review`)
 - `.claude-plugin/` — Claude Code manifest + marketplace
 - `.mcp.json` — `designlib` + `figma` MCP server config

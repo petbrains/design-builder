@@ -1,24 +1,27 @@
 # design-builder Plugin
 
-This repository is a Claude Code plugin: `design-builder`. It bundles 4 slash commands, the `design` knowledge skill, and the `design-auditor` sub-agent.
+This repository is a Claude Code plugin: `design-builder`. It bundles 6 slash commands, the `design` knowledge skill plus sister knowledge skills (`motion`, `playwright-cli`, `figma-use`), and the `design-auditor` sub-agent.
 
-Plugin manifest: `.claude-plugin/plugin.json`. Skill: `skills/design/SKILL.md`. Commands: `commands/`. Sub-agent: `agents/design-auditor.md`.
+Plugin manifest: `.claude-plugin/plugin.json`. Primary skill: `skills/design/SKILL.md`. Commands: `commands/`. Sub-agent: `agents/design-auditor.md`.
 
-When the plugin is installed, users invoke commands as `/design-builder:<command>` — `setup`, `start` (alias of setup), `create`, `improve`, `review`.
+When the plugin is installed, users invoke commands as `/design-builder:<command>` — `setup`, `start` (alias of setup), `design_page`, `design_screen`, `build`, `improve`, `review`.
 
 ## Structure
 
 - `.claude-plugin/plugin.json` — Claude Code manifest (name, version, mcpServers via `.mcp.json`, commands at `./commands/`)
 - `.claude-plugin/marketplace.json` — single-plugin marketplace (so the repo itself is installable as a marketplace source)
 - `.mcp.json` — shared MCP server config (`designlib` + `figma`)
-- `commands/` — 4 user-facing commands: `setup.md`, `start.md` (alias), `create.md`, `improve.md`, `review.md`
-- `agents/design-auditor.md` — sole sub-agent. Used by `/review`. Returns P0-P3 report + JSON contract; supports `visual` / `code_only` / `mixed` modes; runs the AI-slop detector.
+- `commands/` — 6 user-facing commands: `setup.md`, `start.md` (alias), `design_page.md`, `design_screen.md`, `build.md`, `improve.md`, `review.md`
+- `agents/design-auditor.md` — sole sub-agent. Used by `/review`. Returns P0-P3 report + JSON contract; supports `visual` / `code_only` / `mixed` modes; runs the AI-slop detector. Auto-captures running web apps via `playwright-cli` when the caller passes `urls`.
 - `skills/design/SKILL.md` — knowledge skill: 3-layer model, Layer 2 filters (incl. Distinctiveness Gate), Layer 1 source order, `get_design_reference()` resolver (defined in `references/layer1-resolvers.md`), reference index.
 - `skills/design/references/` — deep documentation (architecture, layer1-resolvers, inspiration_pages, commands, distinctiveness-gate, design-dials, designlib-mcp, ux-writing, web/, ios/, figma/, brand/, design/, slides/, system/, design-system/, ui-styling/)
 - `skills/design/data/` — CSV databases for BM25 search
 - `skills/design/scripts/` — Python (search, design_system, system preview) + Node (anti-pattern detector). Stdlib only.
 - `skills/design/templates/` — starters (iOS SwiftUI theme, web CSS/Tailwind/shadcn, brand-guidelines starter)
-- `NOTICE.md` — attribution for 5 source open-source projects
+- `skills/motion/` — sister knowledge skill. Web-UI animation library knowledge (GSAP, WAAPI, CSS, Anime.js, Lottie, Three.js) + HyperFrames short-video pipeline. Loaded by `design` and the relevant commands.
+- `skills/playwright-cli/` — sister knowledge skill. Browser automation via `@playwright/cli`. Used by `/review` (auto-screenshots of running web apps) and `/improve --restructure` (captures live inspiration_pages references). Runtime: `npx @playwright/cli`, no local install.
+- `skills/figma-use/` — Figma Plugin API wrapper (mandatory prerequisite for any `use_figma` write).
+- `NOTICE.md` — attribution for 6 source open-source projects + Figma MCP guide
 - `LICENSE` — MIT
 - `CHANGELOG.md` — version history
 
@@ -28,14 +31,16 @@ Every command must: (1) resolve facts through Layer 1 in the fixed order (projec
 
 Extension markers in code: `KB-EXTENSION` (Layer 1 source), `FILTER-EXTENSION` (new Layer 2 filter). Pipeline markers from v1.2 are removed — there are no pipelines.
 
-## The 4 commands at a glance
+## The 6 commands at a glance
 
-| Command                              | Output target                                          |
-|--------------------------------------|--------------------------------------------------------|
-| `/design-builder:setup`              | `<project>/design/design-system.md`, `style-guide.md`, `content-library.md`, `tokens.css`, `preview.html`, `references/`, `.cache/interview.json` |
-| `/design-builder:create [what]`      | Source code in user's source tree (e.g. `src/pages/landing.tsx`); optional `design/preview.html` |
-| `/design-builder:improve [target]`   | Patches user files via `Edit`; no writes to `design/` |
-| `/design-builder:review [target]`    | `<project>/design/reviews/review-YYYY-MM-DD-HHMM.md` (delegates to `design-auditor`) |
+| Command                                | Output target                                          |
+|----------------------------------------|--------------------------------------------------------|
+| `/design-builder:setup`                | `<project>/design/design-system.md`, `style-guide.md`, `content-library.md`, `tokens.css`, `preview.html`, `references/`, `.cache/interview.json` |
+| `/design-builder:design_page <name>`   | `<project>/design/pages/<name>.md` (web page spec, no code) |
+| `/design-builder:design_screen <name>` | `<project>/design/screens/<name>.md` (iOS / native screen spec, no code) |
+| `/design-builder:build [target]`       | Source code in user's source tree from a spec in `design/pages/` or `design/screens/` |
+| `/design-builder:improve [target]`     | Patches user files via `Edit`; `--restructure` mode rebuilds sections from fresh anchors and may capture live inspiration_pages |
+| `/design-builder:review [target]`      | `<project>/design/reviews/review-YYYY-MM-DD-HHMM.md` (delegates to `design-auditor`); accepts file path / Figma URL / HTTP(S) URL — URLs auto-captured via `playwright-cli` |
 
 Every command ends with a `Next:` block recommending the next concrete action.
 
@@ -66,7 +71,7 @@ Python scripts use stdlib only — no `pip install`. Node anti-pattern detector 
 /plugin install design-builder@design-builder-marketplace
 ```
 
-Then `/design-builder:setup` for a new project, or any of `/create` / `/improve` / `/review` for existing work.
+Then `/design-builder:setup` for a new project, or any of `/design_page` / `/design_screen` / `/build` / `/improve` / `/review` for existing work.
 
 ## v1.2 → v2.0 migration
 

@@ -1,5 +1,53 @@
 # Changelog
 
+## v2.3.1 — 2026-05-03
+
+### Changed
+- `README.md` — added a "Motion — animation knowledge & short-video" section (web-UI mode + video mode summary, anti-patterns link); added a "Live web capture — `playwright-cli`" section documenting `/review` URL input and `/improve --restructure` live inspiration_pages capture; commands table updated to mention `--restructure` and HTTP(S) URL input; `design/` folder tree comments updated for auto-capture paths; "What's inside" lists `skills/motion/`, `skills/playwright-cli/`, `skills/figma-use/`.
+- `.claude-plugin/plugin.json` — version 2.3.1.
+
+## v2.3.0 — 2026-05-03
+
+### Added
+- **`skills/playwright-cli/`** — vendored browser-automation skill (`@playwright/cli`, Apache-2.0, Microsoft). Used by `/review` and `/improve --restructure` to ground designs in real rendered pixels. Runtime: `npx @playwright/cli` — no global install required. References cover navigation, snapshots, screenshots, DOM inspection, request mocking, tracing, video recording, spec-driven testing.
+- **`/design-builder:review` accepts HTTP(S) URLs.** Pass a single URL or a comma-separated list; the auditor invokes `playwright-cli` to capture each at desktop (1440×900) + mobile (375×812) viewports into `design/screenshots/<slug>.<viewport>.png`, then runs visual mode. Replaces the v2.0 "future hook" stub.
+- **`/design-builder:improve --restructure` captures live inspiration_pages.** When a chosen anchor has a `url` field, the live page is captured to `design/.cache/inspiration/<page_id>.png` (gitignored, reused on subsequent runs) so the rebuild plan can reference real composition rather than only metadata.
+- Source attribution in `NOTICE.md` for vendored knowledge from `@playwright/cli` (Microsoft, Apache 2.0).
+
+### Changed
+- `agents/design-auditor.md` — added `urls` and `viewports` inputs; new "Visual acquisition" section runs before visual-mode dimensions when `urls` is supplied; code-only caveat now mentions the `urls` escape hatch.
+- `commands/review.md` — Phase 1 detects HTTP(S) URLs; Phase 2 forwards `urls` and `viewports` to the auditor; "Future hooks" replaced with present-tense "Capture mechanisms" section.
+- `commands/improve.md` — `--restructure` step 2 documents the optional live-capture pattern.
+- `skills/design/SKILL.md` — KB-EXTENSION block now points to playwright-cli as a *visual augmenter* for Layer 1 sources whose records carry a `url` field (today: inspiration_pages).
+- `.claude-plugin/plugin.json` — version 2.3.0, description mentions the new skill.
+- `CLAUDE.md` — refreshed: 6 commands (was stale at "4"), all four knowledge skills listed, `/review` URL input documented.
+
+### Removed
+- `playwright-cli-main/` source folder — deleted after vendoring. Wasn't checked in to git (untracked working tree); SKILL.md + references now live at `skills/playwright-cli/`.
+
+### Notes
+- `playwright-cli` skill is `user-invocable: false` — invoked by the auditor and `/improve --restructure`, not via slash command.
+- First call to `npx @playwright/cli` triggers a one-time download. If the user opts out (offline / no Node), capture steps fall back gracefully and the auditor surfaces a Caveats line.
+
+## v2.2.0 — 2026-05-03
+
+### Added
+- **`skills/motion/`** — new sister skill alongside `skills/design/`. Two modes:
+  - **Web-UI mode** — production-app animation knowledge per library: GSAP, WAAPI, CSS, Anime.js, Lottie, Three.js. Includes a selection decision matrix (`references/selection.md`), `prefers-reduced-motion` patterns for each library, and bundle-cost guidance.
+  - **Video mode** — short-video generation via the HyperFrames pipeline (HTML compositions seeked frame-by-frame, FFmpeg encode). Composition contract + CLI commands (`init / lint / inspect / preview / render / transcribe / tts`) + Tailwind v4 browser runtime notes.
+- **`skills/motion/references/anti-patterns.md`** — P0–P3 motion checklist consumed by the Anti-Patterns Layer 2 filter; integrated into `/improve` Phase 2 step 5 and into `agents/design-auditor.md` Motion dimension.
+- Source attribution in `NOTICE.md` for vendored knowledge from `heygen-com/hyperframes` (lockfile at `skills-lock.json`).
+
+### Changed
+- `skills/design/SKILL.md` — Layer 1 KB-EXTENSION block points to the motion sub-source for `type='animation'`. Frontend Aesthetics → Motion + Anti-Patterns sections cross-link to the new motion skill.
+- `commands/build.md` Phase 3.2 — hand-rolled animations now route through `skills/motion/references/selection.md` and the matching library reference; every emit must respect P0/P1 anti-patterns.
+- `agents/design-auditor.md` — Motion dimension cites the new motion anti-patterns checklist.
+- `.claude-plugin/plugin.json` — version 2.2.0, description updated.
+
+### Notes
+- `motion` skill is `user-invocable: false` (loaded by `design` and the relevant commands, not via slash command).
+- The HyperFrames knowledge is vendored at `.agents/skills/` and tracked by `skills-lock.json`. The `references/video/` files in this skill are adapted excerpts; the full original references (captions, TTS, audio-reactive, beat-direction, transitions) remain at `.agents/skills/hyperframes/references/` and are read on demand when their topic comes up.
+
 ## v2.1.1 — 2026-04-30
 
 ### Changed

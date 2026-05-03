@@ -40,7 +40,7 @@ Walk the target through these dimensions and capture concrete fixable items only
 2. **Anti-patterns** (BAN 1-4 from `SKILL.md`). Any side-stripe borders, gradient text, AI-color (cyan-on-dark, purple-blue gradient), 3-equal-card rows.
 3. **Accessibility — fixable subset.** Missing alt on `<img>`, missing `aria-label` on icon-only buttons, missing focus state, contrast under WCAG AA where token swap fixes it (cross-check against design/style-guide.md ## Accessibility floor — the contrast table tells you which token swaps actually pass for THIS palette).
 4. **Typography hierarchy.** Heading levels skipped (h1 → h3), inconsistent display/body pairing relative to `design/design-system.md`.
-5. **Motion.** `window.addEventListener('scroll')` (replace with IntersectionObserver), animations on properties other than `transform`/`opacity` (web).
+5. **Motion.** `window.addEventListener('scroll')` (replace with IntersectionObserver), animations on properties other than `transform`/`opacity` (web). Walk the P0 / P1 lists in `skills/motion/references/anti-patterns.md` against the target — every P0 hit (missing `prefers-reduced-motion`, infinite UI loops, layout-property animation) is a fixable item; every P1 hit (linear easing, multi-second UI fade, two animation engines in one component) is a candidate fix.
 6. **Distinctiveness Gate — mechanical subset only.** Token-swap-fixable items (e.g. swap a generic Inter-only stack for the system's font pair, replace `--ink-muted` with `--ink-muted-strong` on small nav text).
 7. **Motion gap (web/React only).** If `design/design-system.md` declares `MOTION_INTENSITY >= 6` AND the target file/section has zero animation imports (no `framer-motion`, `motion`, `gsap`, no `<motion.*>` JSX, no Framer hooks, no `useScroll`/`useSpring`/`useTransform`) — surface as a **residual**, not an auto-fix. Format: *"Motion dial is `<X>` but `<file:line>` has no animation. Run `/design-builder:improve <target> --restructure` and pick a `category=hero|background` animation, OR run `/design-builder:design_page <name>` then `/design-builder:build <name>` to regenerate the page with the dial honored."* Auto-vending an animation into existing user code without rebuild context is the documented v2.0 "gluing decor onto generic sections" anti-pattern — flag the mismatch, do not patch it.
 
@@ -54,6 +54,16 @@ Different shape entirely. You're rebuilding one or more weak sections from a fre
 
 1. **Identify target sections.** Either user named them ("rebuild StatsBand and FinalCTA") or you infer from the prior `/review` report's creative P1 items. List them explicitly and confirm with user.
 2. **Per-section anchor resolution.** For each target section, map to a `good_for_stage` value and call `mcp__designlib__list_inspiration_pages(good_for_stage=<stage>, mood=<from design-system.md>, appearance=<from design-system.md>, limit=2)`. Deep-fetch the top result via `get_inspiration_page(page_id=<id>)`.
+
+   **Optional live capture.** If the deep-fetched record has a `url` field, capture it via `playwright-cli` (skill: `skills/playwright-cli/SKILL.md`) so the rebuild plan can reference real pixels rather than only metadata. Cache to `design/.cache/inspiration/<page_id>.png` (gitignored) and reuse on subsequent invocations. Cap one capture per anchor; skip silently if `playwright-cli` is unavailable — the metadata alone is still enough to plan the rebuild.
+
+   ```bash
+   mkdir -p design/.cache/inspiration
+   npx playwright-cli -s=inspo open <inspiration_page.url> --browser=chrome
+   npx playwright-cli -s=inspo resize 1440 900
+   npx playwright-cli -s=inspo screenshot --filename=design/.cache/inspiration/<page_id>.png
+   npx playwright-cli -s=inspo close
+   ```
 3. **Constraint check against `design/design-system.md`.** The fresh anchor must respect the system's palette / typography / token rules. If it conflicts (e.g. anchor uses gradients but system bans them), surface the conflict and offer: (a) pick the next anchor, (b) accept the conflict and document, (c) abort the section.
 4. **Plan the rebuild.** State for each target section: old composition → new composition (concrete language: "left-aligned 3-column stats" → "off-grid stats with diagonal connecting hairlines, anchor on `page_xyz`"). NEVER plan as decorative addition to the existing composition — that's the documented v2.0 failure where decorative fragments got glued onto generic sections.
 4a. **Animation lookup on rebuilt sections (gated).** If the rebuilt section is `hero_section` (always candidate), `cta_band` at `MOTION_INTENSITY >= 7`, or `feature_blocks` at `MOTION_INTENSITY >= 8` — AND the project is React — resolve via `mcp__designlib__list_animations`, deep-fetch via `mcp__designlib__get_animation`, extract TSX from `prompt_text`, write to `src/components/animations/`, import into the rebuilt section. Cap at max 2 animation surfaces across the whole `--restructure` invocation, even across multiple sections. Before import, check that the animation library (`framer-motion`, `gsap`, etc.) is in `package.json`; if not, surface a `Risks taken & gaps` note rather than silently assuming it's installed.

@@ -16,6 +16,8 @@ You run formal design audits on web, iOS, or cross-platform projects. You never 
 - `scope` (optional) — glob of files to audit, defaults to the whole project
 - `figma_url` (optional) — Figma URL to inspect
 - `screenshot_paths` (optional) — array of paths to screenshots in `design/screenshots/`
+- `urls` (optional, web only) — array of URLs to capture via `playwright-cli` (running dev server or live site). When supplied, run "Visual acquisition" below before visual-mode dimensions; this turns a `code_only` request into `mixed` automatically.
+- `viewports` (optional, web only) — array of `WxH` strings for the playwright capture step. Defaults to `["1440x900", "375x812"]` (desktop + mobile).
 
 ## Knowledge base (load on demand)
 
@@ -27,6 +29,23 @@ You run formal design audits on web, iOS, or cross-platform projects. You never 
 - iOS HIG: `skills/design/references/ios/accessibility.md`, `motion.md`, `color.md`, `layout.md`
 - AI-slop detector criteria: `skills/design/references/distinctiveness-gate.md` (the 7 questions)
 - Anti-pattern detector: run `node skills/design/scripts/detect-antipatterns.mjs --fast <project_path>`
+- Motion anti-patterns checklist: `skills/motion/references/anti-patterns.md` (P0 / P1 / P2 / P3 entries — fold the relevant ones into the Motion dimension's findings)
+
+## Visual acquisition (web, when `urls` is supplied)
+
+Before any audit dimension runs, capture screenshots of every URL in `urls` at every viewport in `viewports` via `playwright-cli`. Skill reference: `skills/playwright-cli/SKILL.md`.
+
+For each URL:
+1. Derive a slug — strip the protocol and host, replace `/` with `-`, drop trailing slashes; the bare path `/` becomes `index`. Examples: `http://localhost:3000/` → `index`, `https://example.com/pricing` → `pricing`, `http://localhost:3000/blog/post-1` → `blog-post-1`.
+2. For each viewport `<W>x<H>` in `viewports`:
+   - `npx playwright-cli -s=audit open <url> --browser=chrome` (only on the first call; subsequent capture steps reuse the session).
+   - `npx playwright-cli -s=audit goto <url>` (for URLs after the first).
+   - `npx playwright-cli -s=audit resize <W> <H>`
+   - `mkdir -p <project_path>/design/screenshots` (idempotent).
+   - `npx playwright-cli -s=audit screenshot --filename=<project_path>/design/screenshots/<slug>.<W>x<H>.png`
+3. After the last URL: `npx playwright-cli -s=audit close` (always — no leaked browser sessions).
+
+Append the captured paths to `screenshot_paths` and treat the run as `mode='mixed'` even if the caller passed `code_only`. If `playwright-cli` is unavailable (`npx --no-install playwright-cli --version` fails AND `npm install -g @playwright/cli` is not desired), fall back to the original `mode` and add a Caveats line: "Wanted to auto-capture `<urls>` but `playwright-cli` is unavailable. Drop screenshots in `design/screenshots/` or install `@playwright/cli`."
 
 ## Audit dimensions (run all applicable, skip those the project has no surface for)
 
@@ -36,7 +55,7 @@ You run formal design audits on web, iOS, or cross-platform projects. You never 
 2. **Grid and spacing** — alignment, baseline grid, modular spacing scale, optical adjustments.
 3. **Typography** — hierarchy contrast (size, weight), measure (45-75ch body), display/body pairing per `design/design-system.md` and `design/style-guide.md`, no mixing of three+ families.
 4. **Color** — palette role consistency (primary_accent vs ink), WCAG AA (4.5:1 body, 3:1 large), AAA where claimed, no AI palette (cyan-on-dark, purple-blue gradient). Cross-reference `design/style-guide.md` ## Accessibility floor — the contrast table is the authoritative pass/fail; cite the specific row from this table when reporting any contrast finding.
-5. **Motion** — purposefulness (no animation-for-its-own-sake), GPU-accelerated only (transform/opacity), Reduce Motion honoured, no scroll listener spam.
+5. **Motion** — purposefulness (no animation-for-its-own-sake), GPU-accelerated only (transform/opacity), Reduce Motion honoured, no scroll listener spam. Walk `skills/motion/references/anti-patterns.md`: P0 entries surface as P0 findings (accessibility breakers); P1 entries (linear easing on UI motion, multi-second UI fades, two animation engines in one component, infinite UI loops without stop signal) surface as P1.
 6. **AI-slop detector (NEW for v2.0)** — apply Distinctiveness Gate's 7 questions to the *as-built* surfaces. Specific catches:
    - Generic gradients (purple→blue, cyan-on-dark)
    - Untextured purple/blue dominance without intent
@@ -59,7 +78,7 @@ When no visual is available, run a structural subset:
 5. **Accessibility (code-detectable)** — alt attributes, aria labels on icon buttons, semantic HTML, focus states. Cross-reference `design/style-guide.md` ## Accessibility floor — the contrast table is authoritative pass/fail; cite the specific row for any contrast finding.
 6. **Motion (code-detectable)** — animated properties, scroll listener usage, Reduce Motion checks.
 
-**Mandatory caveat in the report:** "Composition, focal point, balance, rhythm, mood-fit were NOT evaluated — visual was unavailable. Drop screenshots in `design/screenshots/` or supply a Figma URL and rerun for the full picture."
+**Mandatory caveat in the report:** "Composition, focal point, balance, rhythm, mood-fit were NOT evaluated — visual was unavailable. Drop screenshots in `design/screenshots/`, supply a Figma URL, or pass `urls=[<dev-server-url>]` to auto-capture via `playwright-cli` and rerun for the full picture."
 
 ### iOS dimensions (when `platform='ios'` or `'cross'`)
 
