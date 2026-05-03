@@ -84,6 +84,18 @@ All Layer 1 access goes through `get_design_reference(type, filters)`. See [`ref
 If `designlib` MCP is NOT connected and a user starts a design system from scratch, tell them once:
 > "designlib MCP is not connected. It gives authoritative palettes/fonts/inspiration_pages for web + iOS. Install: `claude mcp add --transport http designlib https://designlib-production.up.railway.app/mcp`. Proceeding with local CSV fallback."
 
+### Motion sub-source (KB-EXTENSION)
+
+When the resolved type is `animation` or the spec includes an `animation:` block, the `designlib` MCP gives **what** to do (the recipe / inspiration); the **`motion` sister skill** at [`../motion/SKILL.md`](../../motion/SKILL.md) gives **how** to implement it (library choice, registration patterns, easing, performance, accessibility). Always consult both — the MCP picks the candidate, the motion skill writes correct code.
+
+The motion skill also owns **video mode** (HyperFrames) when the user asks for an MP4 / WebM / short-video deliverable rather than UI motion.
+
+### Live web reference capture (visual augmenter, KB-EXTENSION)
+
+Not a Layer 1 source on its own — a *visual augmenter* for sources that already return a record with a `url` field (today: `inspiration_pages.url`; future: any whole-page reference). The canonical fact still comes from designlib MCP; `playwright-cli` ([`../playwright-cli/SKILL.md`](../../playwright-cli/SKILL.md)) just adds rendered pixels so commands can reason about composition, not only metadata.
+
+Used by `/improve --restructure` (caches inspiration_page captures to `design/.cache/inspiration/<page_id>.png`) and `/review` (captures user-supplied URLs to `design/screenshots/<slug>.<viewport>.png` for the auditor). Skip silently if `playwright-cli` is unavailable — never block a rebuild on it.
+
 <!-- KB-EXTENSION: add new source here -->
 
 ## Schema map for `inspiration_pages`
@@ -235,6 +247,8 @@ Web: [`references/web/spatial-design.md`](references/web/spatial-design.md). iOS
 ### Motion
 High-impact moments > scattered micro-interactions. Web: [`references/web/motion-design.md`](references/web/motion-design.md) + [`references/web/motion/`](references/web/motion/README.md). iOS: [`references/ios/motion.md`](references/ios/motion.md).
 
+For implementation (which library, how to register, easing/performance/accessibility) and for short-video output (HyperFrames pipeline), use the sister skill: [`../motion/SKILL.md`](../../motion/SKILL.md).
+
 ### Interaction
 Web: [`references/web/interaction-design.md`](references/web/interaction-design.md). iOS: [`references/ios/gestures.md`](references/ios/gestures.md), `modals.md`, `controls.md`.
 
@@ -265,6 +279,9 @@ If you showed this interface to someone and said "AI made this," would they beli
 - No `window.addEventListener('scroll')` — use IntersectionObserver / Framer Motion hooks.
 - No `z-50` / `z-10` spam — z-index only for systemic layers.
 - Check `package.json` / Swift Package deps before importing any 3rd-party library.
+
+### Motion-specific anti-patterns
+Full P0–P3 list at [`../motion/references/anti-patterns.md`](../../motion/references/anti-patterns.md). When a candidate output includes motion, walk that list as part of the Anti-Patterns filter pass — P0 (accessibility breakers) and P1 (AI-slop tells) are constraints on emitted code.
 
 ---
 

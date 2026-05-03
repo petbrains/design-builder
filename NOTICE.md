@@ -1,6 +1,6 @@
 # Attribution & Notices
 
-The `design-builder` plugin combines work from five open-source projects plus the official Figma MCP Server Guide. Each contributor's work is credited below.
+The `design-builder` plugin combines work from six open-source projects plus the official Figma MCP Server Guide. Each contributor's work is credited below.
 
 ## Source Projects
 
@@ -39,6 +39,17 @@ Motion principles synthesize work from:
 - **Emil Kowalski** — [emilkowal.ski](https://emilkowal.ski), [animations.dev](https://animations.dev), [Sonner](https://sonner.emilkowal.ski), [Vaul](https://vaul.emilkowal.ski)
 - **Jakub Krehel** — [jakub.kr](https://jakub.kr)
 - **Jhey Tompkins** — [jhey.dev](https://jhey.dev), [@jh3yy](https://twitter.com/jh3yy)
+
+### HyperFrames (HeyGen)
+- **Repository**: https://github.com/heygen-com/hyperframes
+- **Contribution**: Library-level animation knowledge (GSAP, WAAPI, CSS, Anime.js, Lottie, Three.js, Tailwind v4 browser-runtime) and the HyperFrames composition + CLI workflow for short-video generation (HTML composition seeked frame-by-frame, FFmpeg encode, lint/inspect/preview/render commands, transcription, TTS).
+- **Files**: `skills/motion/SKILL.md`, `skills/motion/references/web-animations/{gsap,waapi,css,anime,lottie,three}.md`, `skills/motion/references/video/{hyperframes,hyperframes-cli,tailwind-runtime}.md`. Adapted excerpts of the original skills, which remain vendored at `.agents/skills/` and tracked by `skills-lock.json`. Web-UI references strip the HyperFrames-specific seek/registration contract and keep the library knowledge; video-mode references keep the contract.
+
+### Playwright CLI (Microsoft)
+- **Package**: https://www.npmjs.com/package/@playwright/cli (part of https://github.com/microsoft/playwright)
+- **License**: Apache 2.0
+- **Contribution**: Browser automation skill — page navigation, snapshots, screenshots, DOM/style inspection, network mocking, tracing, video recording, spec-driven test workflow. Used by `/design-builder:review` (auto-captures running web apps for the design-auditor's visual mode) and by `/design-builder:improve --restructure` (captures live `inspiration_pages.url` references to `design/.cache/inspiration/`).
+- **Files**: `skills/playwright-cli/SKILL.md`, `skills/playwright-cli/references/{element-attributes,playwright-tests,request-mocking,running-code,session-management,spec-driven-testing,storage-state,test-generation,tracing,video-recording}.md`. Vendored from the standalone `playwright-cli` skill bundle. Runtime invocation goes through `npx @playwright/cli@latest` — no local checkout or global install required.
 
 ### Figma MCP Server Guide (Figma Inc.)
 - **Repository**: https://github.com/figma/mcp-server-guide
